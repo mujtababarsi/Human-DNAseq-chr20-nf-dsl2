@@ -1,20 +1,25 @@
 #!/usr/bin/env nextflow
 
 /*
- * Generate BAM index file
+ * Generate a BAM index file with Samtools.
  */
 process SAMTOOLS_INDEX {
 
+    tag "$sample_id"
+    label 'process_low'
+    publishDir "${params.outdir}/indexed_bam", mode: 'copy'
+
+    conda "${projectDir}/envs/samtools.yml"
     container 'community.wave.seqera.io/library/samtools:1.20--b5dfbd93de237464'
 
     input:
-    path input_bam
+    tuple val(sample_id), path(bam)
 
     output:
-    tuple path(input_bam), path("${input_bam}.bai")
+    tuple val(sample_id), path(bam), path("${bam}.bai"), emit: indexed_bam
 
     script:
     """
-    samtools index '$input_bam'
+    samtools index '${bam}'
     """
 }

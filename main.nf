@@ -1,91 +1,32 @@
 #!/usr/bin/env nextflow
 
-// Module INCLUDE statements
-include { SAMTOOLS_INDEX } from './modules/samtools_index.nf'
-include { GATK_HAPLOTYPECALLER } from './modules/gatk_haplotypecaller.nf'
-include { GATK_JOINTGENOTYPING } from './modules/gatk_jointgenotyping.nf'
+nextflow.enable.dsl = 2
 
 /*
- * Pipeline parameters
+ * 1. Load the pipeline sub-workflow
  */
-params {
-    // Primary input (file of input files, one per line)
-    input: Path
+include { DNASEQ_WORKFLOW } from './workflows/dnaseq.nf'
 
-    // Accessory files
-    reference: Path
-    reference_index: Path
-    reference_dict: Path
-    intervals: Path
+/*
+ * 2. Build the input channel from the samplesheet.
+ *    Expected columns: sample_id, reads_bam
+ *    `reads_bam` may be an absolute path, or a path relative to the
+ *    project directory (used by the bundled `-profile test` dataset).
+ */
+Channel
+    .fromPath(params.input, checkIfExists: true)
+    .splitCsv(header: true)
+    .map { row ->
+        def bam_path = row.reads_bam.startsWith('/')
+            ? row.reads_bam
+            : "${projectDir}/${row.reads_bam}"
+        tuple(row.sample_id, file(bam_path, checkIfExists: true))
+    }
+    .set { reads_ch }
 
-    // Base name for final output file
-    cohort_name: String
-}
-
+/*
+ * 3. Run the workflow
+ */
 workflow {
-
-    main:
-    // Create input channel from a CSV file listing input file paths
-    // (paths in the samplesheet are relative to the project directory)
-    reads_ch = channel.fromPath(params.input)
-            .splitCsv(header: true)
-            .map { row -> file("${projectDir}/${row.reads_bam}") }
-
-    // Load the file paths for the accessory files (reference and intervals)
-    ref_file        = file(params.reference)
-    ref_index_file  = file(params.reference_index)
-    ref_dict_file   = file(params.reference_dict)
-    intervals_file  = file(params.intervals)
-
-    // Create index file for input BAM file
-    SAMTOOLS_INDEX(reads_ch)
-
-    // Call variants from the indexed BAM file
-    GATK_HAPLOTYPECALLER(
-        SAMTOOLS_INDEX.out,
-        ref_file,
-        ref_index_file,
-        ref_dict_file,
-        intervals_file
-    )
-
-    // Collect variant calling outputs across samples
-    all_gvcfs_ch = GATK_HAPLOTYPECALLER.out.vcf.collect()
-    all_idxs_ch = GATK_HAPLOTYPECALLER.out.idx.collect()
-
-    // Combine GVCFs into a GenomicsDB data store and apply joint genotyping
-    GATK_JOINTGENOTYPING(
-        all_gvcfs_ch,
-        all_idxs_ch,
-        intervals_file,
-        params.cohort_name,
-        ref_file,
-        ref_index_file,
-        ref_dict_file
-    )
-
-    publish:
-    indexed_bam = SAMTOOLS_INDEX.out
-    gvcf = GATK_HAPLOTYPECALLER.out.vcf
-    gvcf_idx = GATK_HAPLOTYPECALLER.out.idx
-    joint_vcf = GATK_JOINTGENOTYPING.out.vcf
-    joint_vcf_idx = GATK_JOINTGENOTYPING.out.idx
-}
-
-output {
-    indexed_bam {
-        path 'indexed_bam'
-    }
-    gvcf {
-        path 'gvcf'
-    }
-    gvcf_idx {
-        path 'gvcf'
-    }
-    joint_vcf {
-        path '.'
-    }
-    joint_vcf_idx {
-        path '.'
-    }
+    DNASEQ_WORKFLOW(reads_ch)
 }

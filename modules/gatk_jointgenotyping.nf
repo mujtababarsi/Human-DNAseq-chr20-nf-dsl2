@@ -1,17 +1,23 @@
 #!/usr/bin/env nextflow
 
 /*
- * Combine GVCFs into GenomicsDB datastore and run joint genotyping to produce cohort-level calls
+ * Combine per-sample GVCFs into a GenomicsDB data store and run joint
+ * genotyping across the cohort to produce a single cohort-level VCF.
  */
 process GATK_JOINTGENOTYPING {
 
-    container "community.wave.seqera.io/library/gatk4:4.5.0.0--730ee8817e436867"
+    tag "$cohort_name"
+    label 'process_medium'
+    publishDir "${params.outdir}", mode: 'copy'
+
+    conda "${projectDir}/envs/gatk4.yml"
+    container 'community.wave.seqera.io/library/gatk4:4.5.0.0--730ee8817e436867'
 
     input:
     path all_gvcfs
     path all_idxs
     path interval_list
-    val cohort_name
+    val  cohort_name
     path ref_fasta
     path ref_index
     path ref_dict

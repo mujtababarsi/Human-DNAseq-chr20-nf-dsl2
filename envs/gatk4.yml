@@ -1,0 +1,6 @@
+name: nf-dnaseq-gatk4
+channels:
+  - bioconda
+  - conda-forge
+dependencies:
+  - gatk4=4.5.0.0

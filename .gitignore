@@ -1,9 +1,14 @@
-# Nextflow
-.nextflow*
+# Nextflow work & execution logs
+.nextflow/
 work/
+.nextflow.log*
+.nextflow.pid
+
+# Results & reports (regenerated on every run)
 results/
-*.nextflow.log*
 
 # OS / editor
 .DS_Store
+.vscode/
+.idea/
 *.swp
