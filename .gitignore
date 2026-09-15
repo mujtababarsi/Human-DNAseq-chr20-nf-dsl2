@@ -1,0 +1,9 @@
+# Nextflow
+.nextflow*
+work/
+results/
+*.nextflow.log*
+
+# OS / editor
+.DS_Store
+*.swp
