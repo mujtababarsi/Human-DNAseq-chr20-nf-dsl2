@@ -1,0 +1,27 @@
+nextflow_process {
+
+    name "Test process SAMTOOLS_INDEX"
+    script "modules/samtools_index.nf"
+    process "SAMTOOLS_INDEX"
+
+    test("Should generate a .bai index alongside the input BAM") {
+
+        when {
+            process {
+                """
+                input[0] = tuple('reads_mother', file("${projectDir}/data/bam/reads_mother.bam"))
+                """
+            }
+        }
+
+        then {
+            assert process.success
+            assert process.out.indexed_bam.size() == 1
+
+            def (sample_id, bam, bai) = process.out.indexed_bam[0]
+            assert sample_id == 'reads_mother'
+            assert file(bam).name == 'reads_mother.bam'
+            assert file(bai).name == 'reads_mother.bam.bai'
+        }
+    }
+}

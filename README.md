@@ -1,6 +1,8 @@
 # 🧬 nf-dnaseq: Germline Variant Calling Pipeline
 
 [![Nextflow](https://img.shields.io/badge/nextflow%20DSL2-%E2%89%A524.10.0-23aa62.svg)](https://www.nextflow.io/)
+[![nf-test](https://img.shields.io/badge/tested%20with-nf--test-337ab7.svg)](https://www.nf-test.com/)
+[![CI](https://img.shields.io/badge/CI-GitHub%20Actions-2088FF?logo=githubactions&logoColor=white)](.github/workflows/ci.yml)
 [![Run with Docker](https://img.shields.io/badge/run%20with-docker-0db7ed?logo=docker)](https://www.docker.com/)
 [![Run with Conda](https://img.shields.io/badge/run%20with-conda-44A833?logo=anaconda)](https://docs.conda.io/)
 [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://opensource.org/licenses/MIT)
@@ -118,6 +120,38 @@ SAMPLE2,/path/to/sample2.bam
 | `cohort_name`       | Name used for the final joint-called VCF                             |
 | `outdir`            | Directory results are published to (default: `results`)              |
 
+Parameters are validated against [`nextflow_schema.json`](nextflow_schema.json) on every run
+(missing/malformed inputs fail immediately, before any container is pulled). Run with
+`--help` for the full usage message, generated from the same schema:
+
+```bash
+nextflow run main.nf --help
+```
+
+## 🧪 Testing
+
+The pipeline has an [nf-test](https://www.nf-test.com/) suite covering the individual
+processes, the `DNASEQ_WORKFLOW` sub-workflow, and a full end-to-end run:
+
+```
+tests/
+├── main.nf.test                          # full pipeline, -profile test equivalent
+├── workflows/dnaseq.nf.test               # sub-workflow: 3 samples in, joint VCF out + fail-fast check
+└── modules/
+    ├── samtools_index.nf.test
+    └── gatk_haplotypecaller.nf.test
+```
+
+Install [nf-test](https://www.nf-test.com/installation/) and run the whole suite with:
+
+```bash
+nf-test test --profile docker
+```
+
+CI (`.github/workflows/ci.yml`) runs both the `-profile test,docker` smoke test and the full
+`nf-test` suite on every push and pull request, against the pipeline's minimum supported
+Nextflow version and the latest release.
+
 ## 📦 Reproducibility
 
 To ensure results can be replicated across environments, this pipeline supports three
@@ -151,16 +185,24 @@ results/
 
 ## ⚠️ Known limitations
 
-This pipeline follows solid DSL2 structure and reproducibility conventions (modular
+This pipeline follows solid DSL2 structure and reproducibility conventions: modular
 processes, pinned containers, multiple execution profiles, fail-fast checks, execution
-reports, automatic retries). It does **not** yet meet full [nf-core](https://nf-co.re/)
-guidelines. Specifically still missing:
+reports, automatic retries, schema-validated parameters, and an nf-test suite exercised by
+CI on every push. It does **not** yet meet every [nf-core](https://nf-co.re/) guideline.
+Specifically still missing:
 
-- Automated tests (`nf-test`) and CI (e.g. GitHub Actions running `-profile test` on push)
-- A `nextflow_schema.json` for structured `--help` and parameter validation
-- Per-process `versions.yml` emission for exact tool-version provenance
+- Per-process `versions.yml` emission for exact tool-version provenance in the published
+  results (currently the container tags in `modules/*.nf` are the source of truth)
 - Containers pinned by SHA256 digest rather than tag (tags on Seqera Wave are effectively
   immutable, but digest pinning is the only fully airtight guarantee)
+- A full nf-core `linting`/community-template compliance pass (e.g. `nf-core pipelines lint`)
+
+None of the code changes in this repository have been executed against live infrastructure
+(no Docker daemon or container registry access in the environment that produced this
+project) — the Nextflow/module/workflow code is verified for syntax and structure, and is
+built directly from the officially tested Nextflow training solutions, but the nf-test suite
+and CI workflow should be run for the first time in a real environment (or via the included
+GitHub Actions workflow) before being relied upon.
 
 ## ✍️ Credits
 

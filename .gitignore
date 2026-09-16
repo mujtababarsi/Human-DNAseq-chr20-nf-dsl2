@@ -7,6 +7,10 @@ work/
 # Results & reports (regenerated on every run)
 results/
 
+# nf-test artifacts
+.nf-test/
+.nf-test.log
+
 # OS / editor
 .DS_Store
 .vscode/

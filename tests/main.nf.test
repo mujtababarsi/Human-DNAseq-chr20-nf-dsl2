@@ -1,0 +1,46 @@
+nextflow_pipeline {
+
+    name "Test the full nf-dnaseq pipeline end-to-end"
+    script "main.nf"
+
+    test("Should run on the bundled family-trio test dataset and produce a joint VCF") {
+
+        when {
+            params {
+                input           = "${projectDir}/data/samplesheet.csv"
+                reference       = "${projectDir}/data/ref/ref.fasta"
+                reference_index = "${projectDir}/data/ref/ref.fasta.fai"
+                reference_dict  = "${projectDir}/data/ref/ref.dict"
+                intervals       = "${projectDir}/data/ref/intervals.bed"
+                cohort_name     = "family_trio"
+                outdir          = "$outputDir"
+            }
+        }
+
+        then {
+            assert workflow.success
+
+            assert path("$outputDir/family_trio.joint.vcf").exists()
+            assert path("$outputDir/family_trio.joint.vcf.idx").exists()
+
+            assert path("$outputDir/indexed_bam/reads_mother.bam.bai").exists()
+            assert path("$outputDir/indexed_bam/reads_father.bam.bai").exists()
+            assert path("$outputDir/indexed_bam/reads_son.bam.bai").exists()
+
+            assert path("$outputDir/gvcf/reads_mother.bam.g.vcf").exists()
+            assert path("$outputDir/gvcf/reads_father.bam.g.vcf").exists()
+            assert path("$outputDir/gvcf/reads_son.bam.g.vcf").exists()
+
+            // The joint VCF should carry all three sample columns
+            def header_line = path("$outputDir/family_trio.joint.vcf").readLines().find { it.startsWith('#CHROM') }
+            assert header_line != null
+            assert header_line.contains('reads_father')
+            assert header_line.contains('reads_mother')
+            assert header_line.contains('reads_son')
+
+            // Execution reports should have been generated
+            assert path("$outputDir/pipeline_info/trace.txt").exists()
+            assert path("$outputDir/pipeline_info/execution_report.html").exists()
+        }
+    }
+}

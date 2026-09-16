@@ -1,0 +1,48 @@
+nextflow_process {
+
+    name "Test process GATK_HAPLOTYPECALLER"
+    script "modules/gatk_haplotypecaller.nf"
+    process "GATK_HAPLOTYPECALLER"
+
+    setup {
+        run("SAMTOOLS_INDEX") {
+            script "modules/samtools_index.nf"
+            process {
+                """
+                input[0] = tuple('reads_mother', file("${projectDir}/data/bam/reads_mother.bam"))
+                """
+            }
+        }
+    }
+
+    test("Should call variants and emit a per-sample GVCF") {
+
+        when {
+            process {
+                """
+                input[0] = SAMTOOLS_INDEX.out.indexed_bam
+                input[1] = file("${projectDir}/data/ref/ref.fasta")
+                input[2] = file("${projectDir}/data/ref/ref.fasta.fai")
+                input[3] = file("${projectDir}/data/ref/ref.dict")
+                input[4] = file("${projectDir}/data/ref/intervals.bed")
+                """
+            }
+        }
+
+        then {
+            assert process.success
+            assert process.out.gvcf.size() == 1
+
+            def (sample_id, gvcf, gvcf_idx) = process.out.gvcf[0]
+            assert sample_id == 'reads_mother'
+            assert file(gvcf).name.endsWith('.g.vcf')
+            assert file(gvcf_idx).name.endsWith('.g.vcf.idx')
+
+            // Sanity-check the GVCF actually contains a variant record for
+            // this sample at the known position from the training dataset.
+            def gvcf_text = file(gvcf).text
+            assert gvcf_text.contains('##fileformat=VCFv4.2')
+            assert gvcf_text.contains('20_10037292_10066351\t3480')
+        }
+    }
+}

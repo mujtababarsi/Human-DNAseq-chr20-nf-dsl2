@@ -1,0 +1,66 @@
+name: nf-dnaseq CI
+
+on:
+  push:
+    branches: [main, master]
+  pull_request:
+    branches: [main, master]
+  workflow_dispatch:
+
+jobs:
+  pipeline-test:
+    name: Run pipeline (nextflow ${{ matrix.nxf_version }})
+    runs-on: ubuntu-latest
+    strategy:
+      fail-fast: false
+      matrix:
+        nxf_version: ["24.10.0", "latest-everything"]
+    steps:
+      - name: Check out pipeline code
+        uses: actions/checkout@v4
+
+      - name: Install Nextflow
+        uses: nf-core/setup-nextflow@v2
+        with:
+          version: "${{ matrix.nxf_version }}"
+
+      - name: Run pipeline on the bundled test dataset
+        run: nextflow run main.nf -profile test,docker --outdir results
+
+      - name: Upload execution reports
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: pipeline-info-${{ matrix.nxf_version }}
+          path: results/pipeline_info
+          retention-days: 7
+
+  nf-test:
+    name: nf-test suite
+    runs-on: ubuntu-latest
+    steps:
+      - name: Check out pipeline code
+        uses: actions/checkout@v4
+
+      - name: Install Nextflow
+        uses: nf-core/setup-nextflow@v2
+        with:
+          version: "24.10.0"
+
+      - name: Install nf-test
+        uses: nf-core/setup-nf-test@v1
+        with:
+          version: "0.9.0"
+
+      - name: Run nf-test suite (module, workflow, and pipeline tests)
+        run: nf-test test --profile docker --ci
+
+      - name: Upload nf-test logs on failure
+        if: failure()
+        uses: actions/upload-artifact@v4
+        with:
+          name: nf-test-logs
+          path: |
+            .nf-test/tests/**/output/pipeline_info
+            .nf-test.log
+          retention-days: 7

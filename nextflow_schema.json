@@ -1,0 +1,110 @@
+{
+    "$schema": "https://json-schema.org/draft/2020-12/schema",
+    "$id": "https://raw.githubusercontent.com/OWNER/nf-dnaseq/master/nextflow_schema.json",
+    "title": "nf-dnaseq pipeline parameters",
+    "description": "Germline short variant calling (per-sample + joint genotyping) with Samtools and GATK4",
+    "type": "object",
+    "$defs": {
+        "input_output_options": {
+            "title": "Input/output options",
+            "type": "object",
+            "fa_icon": "fas fa-terminal",
+            "description": "Define where the pipeline should find input data and save output data.",
+            "required": ["input", "outdir"],
+            "properties": {
+                "input": {
+                    "type": "string",
+                    "format": "file-path",
+                    "exists": true,
+                    "mimetype": "text/csv",
+                    "pattern": "^\\S+\\.csv$",
+                    "description": "Path to a comma-separated samplesheet listing the input BAM files.",
+                    "help_text": "CSV with a header row and two columns: `sample_id,reads_bam`. See `assets/schema_input.json` for the exact row schema and `assets/samplesheet.csv` for a template.",
+                    "fa_icon": "fas fa-file-csv"
+                },
+                "outdir": {
+                    "type": "string",
+                    "format": "directory-path",
+                    "description": "The output directory where results will be published.",
+                    "default": "results",
+                    "fa_icon": "fas fa-folder-open"
+                }
+            }
+        },
+        "reference_genome_options": {
+            "title": "Reference genome options",
+            "type": "object",
+            "fa_icon": "fas fa-dna",
+            "description": "Reference genome and accessory files required for variant calling.",
+            "required": ["reference", "reference_index", "reference_dict", "intervals"],
+            "properties": {
+                "reference": {
+                    "type": "string",
+                    "format": "file-path",
+                    "exists": true,
+                    "pattern": "^\\S+\\.(fa|fasta)(\\.gz)?$",
+                    "description": "Path to the reference genome FASTA file.",
+                    "fa_icon": "fas fa-file"
+                },
+                "reference_index": {
+                    "type": "string",
+                    "format": "file-path",
+                    "exists": true,
+                    "pattern": "^\\S+\\.fai$",
+                    "description": "Path to the reference genome FASTA index (.fai), e.g. generated with `samtools faidx`.",
+                    "fa_icon": "fas fa-file"
+                },
+                "reference_dict": {
+                    "type": "string",
+                    "format": "file-path",
+                    "exists": true,
+                    "pattern": "^\\S+\\.dict$",
+                    "description": "Path to the reference genome sequence dictionary (.dict), e.g. generated with `gatk CreateSequenceDictionary`.",
+                    "fa_icon": "fas fa-file"
+                },
+                "intervals": {
+                    "type": "string",
+                    "format": "file-path",
+                    "exists": true,
+                    "pattern": "^\\S+\\.bed$",
+                    "description": "BED file of genomic intervals to restrict variant calling to.",
+                    "fa_icon": "fas fa-file"
+                }
+            }
+        },
+        "pipeline_options": {
+            "title": "Pipeline options",
+            "type": "object",
+            "fa_icon": "fas fa-cogs",
+            "description": "Options that control pipeline behaviour.",
+            "properties": {
+                "cohort_name": {
+                    "type": "string",
+                    "default": "cohort",
+                    "description": "Base name used for the final joint-genotyped cohort VCF (<cohort_name>.joint.vcf).",
+                    "fa_icon": "fas fa-users"
+                }
+            }
+        },
+        "generic_options": {
+            "title": "Generic options",
+            "type": "object",
+            "fa_icon": "fas fa-question-circle",
+            "description": "Less common options, typically set via a config file or profile rather than the command line.",
+            "properties": {
+                "help": {
+                    "type": "boolean",
+                    "description": "Display the help message and exit.",
+                    "fa_icon": "fas fa-question-circle",
+                    "hidden": true
+                }
+            }
+        }
+    },
+    "allOf": [
+        { "$ref": "#/$defs/input_output_options" },
+        { "$ref": "#/$defs/reference_genome_options" },
+        { "$ref": "#/$defs/pipeline_options" },
+        { "$ref": "#/$defs/generic_options" }
+    ]
+}

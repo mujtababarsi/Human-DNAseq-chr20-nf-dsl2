@@ -1,0 +1,67 @@
+nextflow_workflow {
+
+    name "Test workflow DNASEQ_WORKFLOW"
+    script "workflows/dnaseq.nf"
+    workflow "DNASEQ_WORKFLOW"
+
+    test("Should call variants per-sample and jointly genotype the family trio") {
+
+        when {
+            params {
+                reference       = "${projectDir}/data/ref/ref.fasta"
+                reference_index = "${projectDir}/data/ref/ref.fasta.fai"
+                reference_dict  = "${projectDir}/data/ref/ref.dict"
+                intervals       = "${projectDir}/data/ref/intervals.bed"
+                cohort_name     = "family_trio"
+                input           = "${projectDir}/data/samplesheet.csv"
+            }
+            workflow {
+                """
+                input[0] = Channel.of(
+                    tuple('NA12878', file("${projectDir}/data/bam/reads_mother.bam")),
+                    tuple('NA12877', file("${projectDir}/data/bam/reads_father.bam")),
+                    tuple('NA12882', file("${projectDir}/data/bam/reads_son.bam"))
+                )
+                """
+            }
+        }
+
+        then {
+            assert workflow.success
+            assert workflow.out.indexed_bam.size() == 3
+            assert workflow.out.gvcf.size() == 3
+            assert workflow.out.joint_vcf.size() == 1
+
+            def joint_vcf = workflow.out.joint_vcf[0]
+            assert file(joint_vcf).name == 'family_trio.joint.vcf'
+
+            def header_line = file(joint_vcf).readLines().find { it.startsWith('#CHROM') }
+            assert header_line != null
+            assert header_line.contains('NA12878') || header_line.contains('reads_mother')
+        }
+    }
+
+    test("Should fail fast on an empty input channel") {
+
+        when {
+            params {
+                reference       = "${projectDir}/data/ref/ref.fasta"
+                reference_index = "${projectDir}/data/ref/ref.fasta.fai"
+                reference_dict  = "${projectDir}/data/ref/ref.dict"
+                intervals       = "${projectDir}/data/ref/intervals.bed"
+                cohort_name     = "family_trio"
+                input           = "${projectDir}/data/samplesheet.csv"
+            }
+            workflow {
+                """
+                input[0] = Channel.empty()
+                """
+            }
+        }
+
+        then {
+            assert workflow.failed
+            assert workflow.stdout.toString().contains('No samples found') || workflow.errorReport.contains('No samples found')
+        }
+    }
+}
