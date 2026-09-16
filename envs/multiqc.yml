@@ -1,0 +1,6 @@
+name: human-dnaseq-chr20-multiqc
+channels:
+  - bioconda
+  - conda-forge
+dependencies:
+  - multiqc=1.27

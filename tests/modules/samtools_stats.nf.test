@@ -1,0 +1,40 @@
+nextflow_process {
+
+    name "Test process SAMTOOLS_STATS"
+    script "modules/samtools_stats.nf"
+    process "SAMTOOLS_STATS"
+
+    setup {
+        run("SAMTOOLS_INDEX") {
+            script "modules/samtools_index.nf"
+            process {
+                """
+                input[0] = tuple('reads_mother', file("${projectDir}/data/bam/reads_mother.bam"))
+                """
+            }
+        }
+    }
+
+    test("Should produce a stats and a flagstat report") {
+
+        when {
+            process {
+                """
+                input[0] = SAMTOOLS_INDEX.out.indexed_bam
+                """
+            }
+        }
+
+        then {
+            assert process.success
+            assert process.out.stats.size() == 1
+            assert process.out.flagstat.size() == 1
+
+            def stats_text = file(process.out.stats[0]).text
+            assert stats_text.contains('SN\traw total sequences:')
+
+            def flagstat_text = file(process.out.flagstat[0]).text
+            assert flagstat_text.contains('in total')
+        }
+    }
+}

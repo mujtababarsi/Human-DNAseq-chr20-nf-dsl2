@@ -21,19 +21,24 @@ an HPC cluster, or the cloud, via Docker, Singularity, or Conda.
 
 The pipeline uses a modular design: `main.nf` is a thin entry point that builds the input
 channel from a samplesheet and delegates to the `DNASEQ_WORKFLOW` sub-workflow
-(`workflows/dnaseq.nf`), which wires together three independent, single-purpose processes
+(`workflows/dnaseq.nf`), which wires together six independent, single-purpose processes
 defined under `modules/`.
 
 ```mermaid
 flowchart LR
     A[BAM per sample] --> B[SAMTOOLS_INDEX]
     B --> C[GATK_HAPLOTYPECALLER<br/>GVCF mode]
+    B --> Q1[SAMTOOLS_STATS]
     C -- collect across samples --> D[GATK_JOINTGENOTYPING<br/>GenomicsDBImport + GenotypeGVCFs]
     D --> E[cohort-level joint VCF]
+    E --> Q2[BCFTOOLS_STATS]
+    Q1 --> M[MULTIQC]
+    Q2 --> M
+    M --> R[multiqc_report.html]
 ```
 
-Nextflow can also render the exact execution DAG for any given run (see
-[Reproducibility](#-reproducibility) below).
+Nextflow also renders the exact execution DAG for any given run automatically (see
+[Quality Control & Execution Reports](#-quality-control--execution-reports) below).
 
 ## ⚡ Pipeline Summary
 
@@ -41,12 +46,17 @@ Nextflow can also render the exact execution DAG for any given run (see
 2. **Per-sample calling**: call variants per sample in GVCF mode using GATK `HaplotypeCaller`.
 3. **Joint genotyping**: combine all per-sample GVCFs into a GenomicsDB data store with
    `GenomicsDBImport`, then run `GenotypeGVCFs` to produce one cohort-level VCF.
+4. **QC**: alignment QC per sample (`samtools stats`/`flagstat`) and variant-calling QC on
+   the joint VCF (`bcftools stats`), aggregated into one interactive `MultiQC` report.
 
 | Process                | Tool(s)                                  | Container                                                            |
 |-------------------------|-------------------------------------------|------------------------------------------------------------------------|
 | `SAMTOOLS_INDEX`        | Samtools `index`                          | `community.wave.seqera.io/library/samtools:1.20--b5dfbd93de237464`     |
 | `GATK_HAPLOTYPECALLER`  | GATK `HaplotypeCaller` (`-ERC GVCF`)      | `community.wave.seqera.io/library/gatk4:4.5.0.0--730ee8817e436867`     |
 | `GATK_JOINTGENOTYPING`  | GATK `GenomicsDBImport` + `GenotypeGVCFs` | `community.wave.seqera.io/library/gatk4:4.5.0.0--730ee8817e436867`     |
+| `SAMTOOLS_STATS`        | Samtools `stats` + `flagstat`             | `community.wave.seqera.io/library/samtools:1.20--b5dfbd93de237464`     |
+| `BCFTOOLS_STATS`        | Bcftools `stats`                          | `quay.io/biocontainers/bcftools:1.23.1--hb2cee57_0`                    |
+| `MULTIQC`               | MultiQC                                   | `quay.io/biocontainers/multiqc:1.27--pyhdfd78af_0`                     |
 
 ## 🧬 Dataset & Reference
 
@@ -165,22 +175,54 @@ either way:
 
 Combine with `-profile test` to layer the bundled dataset on top of any of the three.
 
-Every run also writes a full audit trail to `results/pipeline_info/`:
+## 🔍 Quality Control & Execution Reports
+
+Every run produces two kinds of report, both generated automatically — nothing extra to run:
+
+**QC report** (biological QC, i.e. "did the sequencing/calling look right?"):
+`samtools stats`/`flagstat` per sample plus `bcftools stats` on the joint VCF are aggregated
+by MultiQC into one dashboard:
+
+```
+results/qc/multiqc/multiqc_report.html
+```
+
+**Execution reports** (operational, i.e. "how did the run itself behave?"), written to
+`results/pipeline_info/` on every invocation:
 
 - `trace.txt` — per-task resource usage and exit status
 - `timeline.html` — visual execution timeline
 - `execution_report.html` — full run report
-- `pipeline_dag.html` — the resolved execution graph for that exact run
+- `pipeline_dag.html` — **the resolved execution DAG** for that exact run (the pipeline
+  equivalent of the reference project's static `flowchart.png`, but generated fresh from the
+  actual run rather than committed as an image)
+
+Both are switched on in `nextflow.config` (`dag`, `timeline`, `report`, `trace` blocks) —
+just run the pipeline normally and open the HTML files afterwards:
+
+```bash
+nextflow run main.nf -profile test,docker
+open results/qc/multiqc/multiqc_report.html        # QC dashboard
+open results/pipeline_info/pipeline_dag.html        # execution DAG
+```
+
+(use `xdg-open` instead of `open` on Linux)
 
 ## 📂 Output Structure
 
 ```
 results/
-├── indexed_bam/                 # each input BAM + its .bai index
-├── gvcf/                        # per-sample GVCFs (*.g.vcf) + indices
-├── <cohort_name>.joint.vcf      # final cohort-level joint-genotyped VCF
+├── indexed_bam/                          # each input BAM + its .bai index
+├── gvcf/                                 # per-sample GVCFs (*.g.vcf) + indices
+├── <cohort_name>.joint.vcf               # final cohort-level joint-genotyped VCF
 ├── <cohort_name>.joint.vcf.idx
-└── pipeline_info/                # trace, timeline, report, DAG
+├── qc/
+│   ├── samtools/                         # per-sample *.stats.txt + *.flagstat.txt
+│   ├── bcftools/                         # <cohort_name>.bcftools_stats.txt
+│   └── multiqc/
+│       ├── multiqc_report.html           # aggregated QC dashboard
+│       └── multiqc_data/
+└── pipeline_info/                        # trace, timeline, report, DAG
 ```
 
 ## ⚠️ Known limitations
@@ -197,12 +239,12 @@ Specifically still missing:
   immutable, but digest pinning is the only fully airtight guarantee)
 - A full nf-core `linting`/community-template compliance pass (e.g. `nf-core pipelines lint`)
 
-None of the code changes in this repository have been executed against live infrastructure
-(no Docker daemon or container registry access in the environment that produced this
-project) — the Nextflow/module/workflow code is verified for syntax and structure, and is
-built directly from the officially tested Nextflow training solutions, but the nf-test suite
-and CI workflow should be run for the first time in a real environment (or via the included
-GitHub Actions workflow) before being relied upon.
+The core variant-calling pipeline (`-profile test,docker`) has been run and confirmed
+working. The QC modules (`SAMTOOLS_STATS`, `BCFTOOLS_STATS`, `MULTIQC`) and the nf-test/CI
+additions were written to the documented syntax but not executed against live
+infrastructure in the environment that produced them (no Docker daemon there) — run
+`nextflow run main.nf -profile test,docker` again after pulling these changes, or let the
+GitHub Actions CI workflow do it, before relying on the QC report.
 
 ## ✍️ Credits
 

@@ -31,6 +31,13 @@ nextflow_pipeline {
             assert path("$outputDir/gvcf/reads_father.bam.g.vcf").exists()
             assert path("$outputDir/gvcf/reads_son.bam.g.vcf").exists()
 
+            // QC reports: per-sample samtools stats/flagstat, bcftools
+            // stats on the joint VCF, and the aggregated MultiQC report
+            assert path("$outputDir/qc/samtools/reads_mother.bam.stats.txt").exists()
+            assert path("$outputDir/qc/samtools/reads_mother.bam.flagstat.txt").exists()
+            assert path("$outputDir/qc/bcftools/family_trio.bcftools_stats.txt").exists()
+            assert path("$outputDir/qc/multiqc/multiqc_report.html").exists()
+
             // The joint VCF should carry all three sample columns
             def header_line = path("$outputDir/family_trio.joint.vcf").readLines().find { it.startsWith('#CHROM') }
             assert header_line != null

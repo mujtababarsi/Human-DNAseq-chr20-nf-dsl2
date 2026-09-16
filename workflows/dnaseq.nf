@@ -6,11 +6,16 @@
  *   2. Call variants per-sample in GVCF mode with GATK HaplotypeCaller
  *   3. Combine all GVCFs into a GenomicsDB store and jointly genotype
  *      the cohort with GATK GenomicsDBImport + GenotypeGVCFs
+ *   4. Collect QC (samtools stats/flagstat + bcftools stats) into a
+ *      single aggregated MultiQC report
  */
 
 include { SAMTOOLS_INDEX }       from '../modules/samtools_index.nf'
+include { SAMTOOLS_STATS }       from '../modules/samtools_stats.nf'
 include { GATK_HAPLOTYPECALLER } from '../modules/gatk_haplotypecaller.nf'
 include { GATK_JOINTGENOTYPING } from '../modules/gatk_jointgenotyping.nf'
+include { BCFTOOLS_STATS }       from '../modules/bcftools_stats.nf'
+include { MULTIQC }              from '../modules/multiqc.nf'
 
 workflow DNASEQ_WORKFLOW {
     take:
@@ -30,6 +35,9 @@ workflow DNASEQ_WORKFLOW {
 
     // 1. Index each BAM file
     indexed_ch = SAMTOOLS_INDEX(reads_ch).indexed_bam
+
+    // 1b. Per-sample alignment QC (feeds into MultiQC below)
+    stats_out = SAMTOOLS_STATS(indexed_ch)
 
     // 2. Per-sample variant calling in GVCF mode
     gvcf_ch = GATK_HAPLOTYPECALLER(
@@ -56,9 +64,25 @@ workflow DNASEQ_WORKFLOW {
         ref_dict
     )
 
+    // 4b. Variant-calling QC on the joint VCF
+    vcf_stats_out = BCFTOOLS_STATS(joint_ch.vcf, params.cohort_name)
+
+    // 5. Aggregate every QC report into one MultiQC dashboard. `.mix()`
+    //    combines the different report channels; `.collect()` gathers
+    //    them into a single list so MultiQC only runs once, after
+    //    everything else has finished.
+    qc_files_ch = stats_out.stats
+        .mix(stats_out.flagstat)
+        .mix(vcf_stats_out.stats)
+        .collect()
+
+    multiqc_out = MULTIQC(qc_files_ch)
+
     emit:
-    indexed_bam = indexed_ch   // tuple(sample_id, bam, bai)
-    gvcf        = gvcf_ch      // tuple(sample_id, gvcf, gvcf_idx)
-    joint_vcf   = joint_ch.vcf
-    joint_idx   = joint_ch.idx
+    indexed_bam    = indexed_ch          // tuple(sample_id, bam, bai)
+    gvcf           = gvcf_ch             // tuple(sample_id, gvcf, gvcf_idx)
+    joint_vcf      = joint_ch.vcf
+    joint_idx      = joint_ch.idx
+    bcftools_stats = vcf_stats_out.stats
+    multiqc_report = multiqc_out.report
 }

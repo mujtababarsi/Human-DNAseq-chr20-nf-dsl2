@@ -31,6 +31,8 @@ nextflow_workflow {
             assert workflow.out.indexed_bam.size() == 3
             assert workflow.out.gvcf.size() == 3
             assert workflow.out.joint_vcf.size() == 1
+            assert workflow.out.bcftools_stats.size() == 1
+            assert workflow.out.multiqc_report.size() == 1
 
             def joint_vcf = workflow.out.joint_vcf[0]
             assert file(joint_vcf).name == 'family_trio.joint.vcf'
