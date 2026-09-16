@@ -1,7 +1,7 @@
 {
     "$schema": "https://json-schema.org/draft/2020-12/schema",
-    "$id": "https://raw.githubusercontent.com/OWNER/nf-dnaseq/master/nextflow_schema.json",
-    "title": "nf-dnaseq pipeline parameters",
+    "$id": "https://raw.githubusercontent.com/OWNER/Human-DNAseq-chr20-nf-dsl2/master/nextflow_schema.json",
+    "title": "Human-DNAseq-chr20-nf-dsl2 pipeline parameters",
     "description": "Germline short variant calling (per-sample + joint genotyping) with Samtools and GATK4",
     "type": "object",
     "$defs": {

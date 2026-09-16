@@ -1,4 +1,4 @@
-name: nf-dnaseq-samtools
+name: human-dnaseq-chr20-samtools
 channels:
   - bioconda
   - conda-forge

@@ -1,4 +1,4 @@
-# 🧬 nf-dnaseq: Germline Variant Calling Pipeline
+# 🧬 Human-DNAseq-chr20-nf-dsl2: Human Chr20 Germline Variant Calling Pipeline
 
 [![Nextflow](https://img.shields.io/badge/nextflow%20DSL2-%E2%89%A524.10.0-23aa62.svg)](https://www.nextflow.io/)
 [![nf-test](https://img.shields.io/badge/tested%20with-nf--test-337ab7.svg)](https://www.nf-test.com/)
@@ -9,7 +9,7 @@
 
 ## 📖 Introduction
 
-**nf-dnaseq** is a portable germline short-variant calling pipeline written in
+**Human-DNAseq-chr20-nf-dsl2** is a portable germline short-variant calling pipeline written in
 [Nextflow](https://www.nextflow.io) using **DSL2**. It wraps **Samtools** and **GATK4** to
 call SNPs and indels from mapped whole-genome sequencing (BAM) data, using containerised
 tools throughout.
@@ -84,8 +84,8 @@ SAMPLE2,/path/to/sample2.bam
 2. **Clone the repository**:
 
    ```bash
-   git clone https://github.com/<your-username>/nf-dnaseq.git
-   cd nf-dnaseq
+   git clone https://github.com/<your-username>/Human-DNAseq-chr20-nf-dsl2.git
+   cd Human-DNAseq-chr20-nf-dsl2
    ```
 
 3. **Run on the bundled test data**:

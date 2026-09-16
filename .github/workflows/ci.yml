@@ -1,4 +1,4 @@
-name: nf-dnaseq CI
+name: Human-DNAseq-chr20-nf-dsl2 CI
 
 on:
   push:

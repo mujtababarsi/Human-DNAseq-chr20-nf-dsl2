@@ -1,6 +1,6 @@
 nextflow_pipeline {
 
-    name "Test the full nf-dnaseq pipeline end-to-end"
+    name "Test the full Human-DNAseq-chr20-nf-dsl2 pipeline end-to-end"
     script "main.nf"
 
     test("Should run on the bundled family-trio test dataset and produce a joint VCF") {

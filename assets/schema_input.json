@@ -1,8 +1,8 @@
 {
     "$schema": "https://json-schema.org/draft/2020-12/schema",
-    "$id": "https://raw.githubusercontent.com/OWNER/nf-dnaseq/master/assets/schema_input.json",
-    "title": "nf-dnaseq samplesheet schema",
-    "description": "Schema for the samplesheet passed to nf-dnaseq via --input",
+    "$id": "https://raw.githubusercontent.com/OWNER/Human-DNAseq-chr20-nf-dsl2/master/assets/schema_input.json",
+    "title": "Human-DNAseq-chr20-nf-dsl2 samplesheet schema",
+    "description": "Schema for the samplesheet passed to Human-DNAseq-chr20-nf-dsl2 via --input",
     "type": "array",
     "items": {
         "type": "object",

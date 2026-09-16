@@ -1,4 +1,4 @@
-name: nf-dnaseq-gatk4
+name: human-dnaseq-chr20-gatk4
 channels:
   - bioconda
   - conda-forge
