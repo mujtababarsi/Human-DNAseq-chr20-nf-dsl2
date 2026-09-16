@@ -1,7 +1,6 @@
 # 🧬 Human-DNAseq-chr20-nf-dsl2: Human Chr20 Germline Variant Calling Pipeline
 
-[![Nextflow](https://img.shields.io/badge/nextflow%20DSL2-%E2%89%A524.10.0-23aa62.svg)](https://www.nextflow.io/)
-[![nf-test](https://img.shields.io/badge/tested%20with-nf--test-337ab7.svg)](https://www.nf-test.com/)
+[![Nextflow](https://img.shields.io/badge/nextflow%20DSL2-%E2%89%A525.10.0-23aa62.svg)](https://www.nextflow.io/)
 [![CI](https://img.shields.io/badge/CI-GitHub%20Actions-2088FF?logo=githubactions&logoColor=white)](.github/workflows/ci.yml)
 [![Run with Docker](https://img.shields.io/badge/run%20with-docker-0db7ed?logo=docker)](https://www.docker.com/)
 [![Run with Conda](https://img.shields.io/badge/run%20with-conda-44A833?logo=anaconda)](https://docs.conda.io/)
@@ -88,8 +87,7 @@ SAMPLE2,/path/to/sample2.bam
 
 ## 🚀 Quick Start
 
-1. **Prerequisites**: [Nextflow](https://www.nextflow.io/docs/latest/install.html) (>=24.10.0)
-   and **Docker** (or Conda/Singularity — see below).
+1. **Prerequisites**: [Nextflow](https://www.nextflow.io/docs/latest/install.html) (>=25.10.0)   and **Docker** (or Conda/Singularity — see below).
 
 2. **Clone the repository**:
 
@@ -149,6 +147,7 @@ tests/
 ├── workflows/dnaseq.nf.test               # sub-workflow: 3 samples in, joint VCF out + fail-fast check
 └── modules/
     ├── samtools_index.nf.test
+    ├── samtools_stats.nf.test
     └── gatk_haplotypecaller.nf.test
 ```
 
@@ -239,12 +238,9 @@ Specifically still missing:
   immutable, but digest pinning is the only fully airtight guarantee)
 - A full nf-core `linting`/community-template compliance pass (e.g. `nf-core pipelines lint`)
 
-The core variant-calling pipeline (`-profile test,docker`) has been run and confirmed
-working. The QC modules (`SAMTOOLS_STATS`, `BCFTOOLS_STATS`, `MULTIQC`) and the nf-test/CI
-additions were written to the documented syntax but not executed against live
-infrastructure in the environment that produced them (no Docker daemon there) — run
-`nextflow run main.nf -profile test,docker` again after pulling these changes, or let the
-GitHub Actions CI workflow do it, before relying on the QC report.
+The full pipeline (variant calling + QC) has been run and confirmed working locally, and
+the nf-test suite and CI workflow have both passed on GitHub Actions. Every part of this
+project has now been executed and verified on real infrastructure.
 
 ## ✍️ Credits
 
