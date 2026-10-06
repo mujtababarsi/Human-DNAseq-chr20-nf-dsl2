@@ -1,4 +1,4 @@
-# 🧬 Human-DNAseq-chr20-nf-dsl2: Human Chr20 Germline Variant Calling Pipeline
+#  Human-DNAseq-chr20-nf-dsl2: Human Chr20 Germline Variant Calling Pipeline
 
 [![Nextflow](https://img.shields.io/badge/nextflow%20DSL2-%E2%89%A525.10.0-23aa62.svg)](https://www.nextflow.io/)
 [![CI](https://img.shields.io/badge/CI-GitHub%20Actions-2088FF?logo=githubactions&logoColor=white)](.github/workflows/ci.yml)
@@ -6,16 +6,16 @@
 [![Run with Conda](https://img.shields.io/badge/run%20with-conda-44A833?logo=anaconda)](https://docs.conda.io/)
 [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://opensource.org/licenses/MIT)
 
-## 📖 Introduction
+##  Introduction
 
 **Human-DNAseq-chr20-nf-dsl2** is a portable germline short-variant calling pipeline written in
 [Nextflow](https://www.nextflow.io) using **DSL2**. It wraps **Samtools** and **GATK4** to
 call SNPs and indels from mapped whole-genome sequencing (BAM) data, using containerised
 tools throughout.
 
-The pipeline is built for reproducibility and portability: It has Docker, Singularity and Conda profiles. So far it has been run with Docker, locally and on GitHub Actions.
+The pipeline is built for reproducibility and portability. It has Docker, Singularity and Conda profiles. So far it has been run with Docker, locally and on GitHub Actions.
 
-## 🧩 Workflow Architecture
+##  Workflow Architecture
 
 The pipeline uses a modular design: `main.nf` is a thin entry point that builds the input
 channel from a samplesheet and delegates to the `DNASEQ_WORKFLOW` sub-workflow
@@ -38,7 +38,7 @@ flowchart LR
 Nextflow also renders the exact execution DAG for any given run automatically (see
 [Quality Control & Execution Reports](#-quality-control--execution-reports) below).
 
-## ⚡ Pipeline Summary
+##  Pipeline Summary
 
 1. **Indexing**: generate a `.bai` index for each input BAM using `Samtools index`.
 2. **Per-sample calling**: call variants per sample in GVCF mode using GATK `HaplotypeCaller`.
@@ -56,7 +56,7 @@ Nextflow also renders the exact execution DAG for any given run automatically (s
 | `BCFTOOLS_STATS`        | Bcftools `stats`                          | `quay.io/biocontainers/bcftools:1.23.1--hb2cee57_0`                    |
 | `MULTIQC`               | MultiQC                                   | `quay.io/biocontainers/multiqc:1.27--pyhdfd78af_0`                     |
 
-## 🧬 Dataset & Reference
+##  Dataset & Reference
 
 The bundled test dataset under `data/` is a **family trio** (mother, father, son; mapped
 Illumina short-read WGS data) subset to a small slice of **chromosome 20** (hg19/b37), so the
@@ -72,7 +72,7 @@ SAMPLE1,/path/to/sample1.bam
 SAMPLE2,/path/to/sample2.bam
 ```
 
-## 🛡️ Validation & Reliability
+##  Validation & Reliability
 
 - **Fail-fast checks**: the samplesheet and every reference file are validated with
   `checkIfExists: true`, and the workflow raises a clear error if no samples are found —
@@ -84,7 +84,7 @@ SAMPLE2,/path/to/sample2.bam
 - **Automatic retry**: processes killed by an out-of-memory or termination signal
   (exit codes 137/139/143) are retried automatically before the run is allowed to fail.
 
-## 🚀 Quick Start
+##  Quick Start
 
 1. **Prerequisites**: [Nextflow](https://www.nextflow.io/docs/latest/install.html) (>=25.10.0)   and **Docker** (or Conda/Singularity — see below).
 
@@ -98,7 +98,7 @@ SAMPLE2,/path/to/sample2.bam
 3. **Run on the bundled test data**:
 
    ```bash
-   nextflow run main.nf -profile test,docker
+   nextflow run main.nf -profile test, docker
    ```
 
 4. **Run on your own samples**:
@@ -135,7 +135,7 @@ Parameters are validated against [`nextflow_schema.json`](nextflow_schema.json) 
 nextflow run main.nf --help
 ```
 
-## 🧪 Testing
+##  Testing
 
 The pipeline has an [nf-test](https://www.nf-test.com/) suite covering the individual
 processes, the `DNASEQ_WORKFLOW` sub-workflow, and a full end-to-end run:
@@ -160,7 +160,7 @@ CI (`.github/workflows/ci.yml`) runs both the `-profile test,docker` smoke test 
 `nf-test` suite on every push and pull request, against the pipeline's minimum supported
 Nextflow version and the latest release.
 
-## 📦 Reproducibility
+##  Reproducibility
 
 To ensure results can be replicated across environments, this pipeline supports three
 interchangeable execution profiles, and every tool runs in a version-pinned container/env
@@ -173,7 +173,7 @@ either way:
 
 Combine with `-profile test` to layer the bundled dataset on top of any of the three.
 
-## 🔍 Quality Control & Execution Reports
+##  Quality Control & Execution Reports
 
 Every run produces two kinds of report, both generated automatically — nothing extra to run:
 
@@ -206,7 +206,7 @@ open results/pipeline_info/pipeline_dag.html        # execution DAG
 
 (use `xdg-open` instead of `open` on Linux)
 
-## 📂 Output Structure
+##  Output Structure
 
 ```
 results/
@@ -223,7 +223,7 @@ results/
 └── pipeline_info/                        # trace, timeline, report, DAG
 ```
 
-## ⚠️ Known limitations
+##  Known limitations
 
 This pipeline follows solid DSL2 structure and reproducibility conventions: modular
 processes, pinned containers, multiple execution profiles, fail-fast checks, execution
@@ -240,7 +240,7 @@ Specifically still missing:
 The full pipeline (variant calling + QC) has been run and confirmed working locally, and
 the nf-test suite and CI workflow have both passed on GitHub Actions.
 
-## ✍️ Credits
+##  Credits
 
 Pipeline commands and dataset adapted from the Nextflow
 ["Nextflow for Science: Genomics"](https://training.nextflow.io/latest/nf4_science/genomics/)
