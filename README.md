@@ -13,8 +13,7 @@
 call SNPs and indels from mapped whole-genome sequencing (BAM) data, using containerised
 tools throughout.
 
-The pipeline is built for reproducibility and portability: it runs the same way on a laptop,
-an HPC cluster, or the cloud, via Docker, Singularity, or Conda.
+The pipeline is built for reproducibility and portability: It has Docker, Singularity and Conda profiles. So far it has been run with Docker, locally and on GitHub Actions.
 
 ## 🧩 Workflow Architecture
 
