@@ -238,8 +238,7 @@ Specifically still missing:
 - A full nf-core `linting`/community-template compliance pass (e.g. `nf-core pipelines lint`)
 
 The full pipeline (variant calling + QC) has been run and confirmed working locally, and
-the nf-test suite and CI workflow have both passed on GitHub Actions. Every part of this
-project has now been executed and verified on real infrastructure.
+the nf-test suite and CI workflow have both passed on GitHub Actions.
 
 ## ✍️ Credits
 
