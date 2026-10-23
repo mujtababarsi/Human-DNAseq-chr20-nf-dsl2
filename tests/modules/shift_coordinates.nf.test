@@ -1,0 +1,115 @@
+nextflow_process {
+
+    name "Test process SHIFT_COORDINATES"
+    script "modules/shift_coordinates.nf"
+    process "SHIFT_COORDINATES"
+
+    test("Should rename the excerpt contig and add the offset to POS") {
+
+        when {
+            process {
+                """
+                input[0] = file("${projectDir}/tests/fixtures/annotation/joint_excerpt.vcf")
+                input[1] = 'family_trio'
+                input[2] = '20_10037292_10066351'
+                input[3] = '20'
+                input[4] = 63025520
+                input[5] = 10037292
+                input[6] = []
+                input[7] = []
+                """
+            }
+        }
+
+        then {
+            assert process.success
+            assert file(process.out.vcf[0]).name == 'family_trio.shifted.vcf.gz'
+            assert file(process.out.tbi[0]).name == 'family_trio.shifted.vcf.gz.tbi'
+            assert process.out.ref_check.size() == 0
+
+            def lines   = new java.util.zip.GZIPInputStream(new FileInputStream(file(process.out.vcf[0]))).text.readLines()
+            def records = lines.findAll { !it.startsWith('#') }
+            assert lines.contains('##contig=<ID=20,length=63025520>')
+            assert !lines.any { it.startsWith('##contig=<ID=20_10037292_10066351') }
+
+            // Excerpt POS 3480/3520/3529 + 10037292
+            assert records.size() == 3
+            assert records.collect { it.split('\t')[0..4].join('\t') } == [
+                '20\t10040772\t.\tC\tCT',
+                '20\t10040812\t.\tAT\tA',
+                '20\t10040821\t.\tT\tA'
+            ]
+        }
+    }
+
+    test("REF check should pass when every REF matches the FASTA") {
+
+        // Identity shift (same contig, offset 0) so the bundled excerpt
+        // FASTA can serve as the reference: a positive control for the check
+        when {
+            process {
+                """
+                input[0] = file("${projectDir}/tests/fixtures/annotation/joint_excerpt.vcf")
+                input[1] = 'family_trio'
+                input[2] = '20_10037292_10066351'
+                input[3] = '20_10037292_10066351'
+                input[4] = 29059
+                input[5] = 0
+                input[6] = file("${projectDir}/data/ref/ref.fasta")
+                input[7] = file("${projectDir}/data/ref/ref.fasta.fai")
+                """
+            }
+        }
+
+        then {
+            assert process.success
+            assert file(process.out.ref_check[0]).text.contains('REF check passed: 3/3 records')
+        }
+    }
+
+    test("REF check should fail the task when the offset is wrong") {
+
+        when {
+            process {
+                """
+                input[0] = file("${projectDir}/tests/fixtures/annotation/joint_excerpt.vcf")
+                input[1] = 'family_trio'
+                input[2] = '20_10037292_10066351'
+                input[3] = '20_10037292_10066351'
+                input[4] = 29059
+                input[5] = 1
+                input[6] = file("${projectDir}/data/ref/ref.fasta")
+                input[7] = file("${projectDir}/data/ref/ref.fasta.fai")
+                """
+            }
+        }
+
+        then {
+            assert process.failed
+            assert process.errorReport.contains('Reference allele mismatch')
+        }
+    }
+
+    test("Should fail when the source contig is not in the VCF header") {
+
+        when {
+            process {
+                """
+                input[0] = file("${projectDir}/tests/fixtures/annotation/joint_excerpt.vcf")
+                input[1] = 'family_trio'
+                input[2] = 'chr99'
+                input[3] = '20'
+                input[4] = 63025520
+                input[5] = 10037292
+                input[6] = []
+                input[7] = []
+                """
+            }
+        }
+
+        then {
+            assert process.failed
+            assert process.errorReport.contains("contig 'chr99' not found")
+        }
+    }
+}

@@ -1,0 +1,59 @@
+nextflow_process {
+
+    name "Test process CLINVAR_ANNOTATE"
+    script "modules/clinvar_annotate.nf"
+    process "CLINVAR_ANNOTATE"
+
+    test("Should copy CLNSIG and CLNDN from a matching ClinVar record") {
+
+        // Positive control: one real ClinVar record + a synthetic variant at
+        // the same position/alleles (see tests/fixtures/README.md)
+        when {
+            process {
+                """
+                input[0] = file("${projectDir}/tests/fixtures/annotation/synthetic_clinvar_query.vcf")
+                input[1] = file("${projectDir}/tests/fixtures/annotation/clinvar_one_record.vcf.gz")
+                input[2] = file("${projectDir}/tests/fixtures/annotation/clinvar_one_record.vcf.gz.tbi")
+                input[3] = 'test'
+                """
+            }
+        }
+
+        then {
+            assert process.success
+            assert file(process.out.vcf[0]).name == 'test.clinvar.vcf.gz'
+            assert file(process.out.tbi[0]).name == 'test.clinvar.vcf.gz.tbi'
+
+            def records = new java.util.zip.GZIPInputStream(new FileInputStream(file(process.out.vcf[0]))).text
+                .readLines().findAll { !it.startsWith('#') }
+            assert records.size() == 1
+            def info = records[0].split('\t')[7]
+            assert info.contains('CLNSIG=Likely_benign')
+            assert info.contains('CLNDN=not_specified')
+        }
+    }
+
+    test("Should leave variants unannotated when ClinVar has no record there") {
+
+        // Negative control: the bundled test-region ClinVar file has 0 records
+        when {
+            process {
+                """
+                input[0] = file("${projectDir}/tests/fixtures/annotation/synthetic_clinvar_query.vcf")
+                input[1] = file("${projectDir}/data/annotation/clinvar_region.vcf.gz")
+                input[2] = file("${projectDir}/data/annotation/clinvar_region.vcf.gz.tbi")
+                input[3] = 'test'
+                """
+            }
+        }
+
+        then {
+            assert process.success
+
+            def records = new java.util.zip.GZIPInputStream(new FileInputStream(file(process.out.vcf[0]))).text
+                .readLines().findAll { !it.startsWith('#') }
+            assert records.size() == 1
+            assert !records[0].contains('CLNSIG=')
+        }
+    }
+}

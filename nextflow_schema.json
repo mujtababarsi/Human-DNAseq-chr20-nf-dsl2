@@ -2,7 +2,7 @@
     "$schema": "https://json-schema.org/draft/2020-12/schema",
     "$id": "https://raw.githubusercontent.com/OWNER/Human-DNAseq-chr20-nf-dsl2/master/nextflow_schema.json",
     "title": "Human-DNAseq-chr20-nf-dsl2 pipeline parameters",
-    "description": "Germline short variant calling (per-sample + joint genotyping) with Samtools and GATK4",
+    "description": "Germline short variant calling (per-sample + joint genotyping) with Samtools and GATK4, plus optional ClinVar/SnpEff annotation",
     "type": "object",
     "$defs": {
         "input_output_options": {
@@ -86,6 +86,90 @@
                 }
             }
         },
+        "annotation_options": {
+            "title": "Annotation options",
+            "type": "object",
+            "fa_icon": "fas fa-tags",
+            "description": "Optional variant annotation after joint genotyping. Each step runs only when its parameter is set.",
+            "dependentRequired": {
+                "contig_offset": ["source_contig", "target_contig", "target_contig_length"],
+                "proband": ["father", "mother"],
+                "father": ["proband", "mother"],
+                "mother": ["proband", "father"]
+            },
+            "properties": {
+                "contig_offset": {
+                    "type": "integer",
+                    "minimum": 0,
+                    "description": "Add this offset to POS and rename source_contig to target_contig (SHIFT_COORDINATES). Only needed when variants were called against a reference excerpt.",
+                    "help_text": "The bundled test reference is a 29 kb excerpt named `20_10037292_10066351`; its position 1 is GRCh37 chr20:10037293, so the offset is 10037292. Requires `source_contig`, `target_contig` and `target_contig_length`.",
+                    "fa_icon": "fas fa-arrows-alt-h"
+                },
+                "source_contig": {
+                    "type": "string",
+                    "description": "Contig name in the called VCF to shift (e.g. `20_10037292_10066351`).",
+                    "fa_icon": "fas fa-font"
+                },
+                "target_contig": {
+                    "type": "string",
+                    "description": "Contig name to write instead (must match ClinVar and SnpEff naming, e.g. `20` for GRCh37).",
+                    "fa_icon": "fas fa-font"
+                },
+                "target_contig_length": {
+                    "type": "integer",
+                    "minimum": 1,
+                    "description": "Length written to the new ##contig header line (GRCh37 chr20: 63025520).",
+                    "fa_icon": "fas fa-ruler-horizontal"
+                },
+                "ref_check_fasta": {
+                    "type": "string",
+                    "format": "file-path",
+                    "exists": true,
+                    "pattern": "^\\S+\\.(fa|fasta)$",
+                    "description": "Full-chromosome FASTA (uncompressed, with a .fai next to it) to check every shifted REF allele against. The run fails on any mismatch.",
+                    "help_text": "Only used together with `contig_offset`. Proves the offset is right before anything is annotated.",
+                    "fa_icon": "fas fa-check-double"
+                },
+                "clinvar": {
+                    "type": "string",
+                    "format": "file-path",
+                    "exists": true,
+                    "pattern": "^\\S+\\.vcf\\.gz$",
+                    "description": "Bgzipped ClinVar VCF (with a .tbi index next to it) for CLINVAR_ANNOTATE. Adds INFO/CLNSIG and INFO/CLNDN.",
+                    "help_text": "Use the ClinVar build that matches your reference (GRCh37 for the test data), from https://ftp.ncbi.nlm.nih.gov/pub/clinvar/.",
+                    "fa_icon": "fas fa-notes-medical"
+                },
+                "snpeff_db": {
+                    "type": "string",
+                    "format": "directory-path",
+                    "exists": true,
+                    "description": "SnpEff data directory containing `<snpeff_genome>/snpEffectPredictor.bin`. SnpEff is skipped when unset.",
+                    "help_text": "Download once with `snpEff download -dataDir /abs/path GRCh37.75`. Not set in the test profile or CI because the database is ~540 MB.",
+                    "fa_icon": "fas fa-database"
+                },
+                "snpeff_genome": {
+                    "type": "string",
+                    "default": "GRCh37.75",
+                    "description": "SnpEff genome database name.",
+                    "fa_icon": "fas fa-dna"
+                },
+                "proband": {
+                    "type": "string",
+                    "description": "Sample name of the child for the de novo filter (FILTER_VARIANTS). Requires `father` and `mother`.",
+                    "fa_icon": "fas fa-child"
+                },
+                "father": {
+                    "type": "string",
+                    "description": "Sample name of the father.",
+                    "fa_icon": "fas fa-male"
+                },
+                "mother": {
+                    "type": "string",
+                    "description": "Sample name of the mother.",
+                    "fa_icon": "fas fa-female"
+                }
+            }
+        },
         "generic_options": {
             "title": "Generic options",
             "type": "object",
@@ -105,6 +189,7 @@
         { "$ref": "#/$defs/input_output_options" },
         { "$ref": "#/$defs/reference_genome_options" },
         { "$ref": "#/$defs/pipeline_options" },
+        { "$ref": "#/$defs/annotation_options" },
         { "$ref": "#/$defs/generic_options" }
     ]
 }

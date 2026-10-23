@@ -40,6 +40,58 @@ nextflow_workflow {
             def header_line = file(joint_vcf).readLines().find { it.startsWith('#CHROM') }
             assert header_line != null
             assert header_line.contains('NA12878') || header_line.contains('reads_mother')
+
+            // No annotation params set: every annotation step is skipped
+            assert workflow.out.annotated_vcf == workflow.out.joint_vcf
+            assert workflow.out.annotation_summary.size() == 0
+            assert workflow.out.de_novo.size() == 0
+        }
+    }
+
+    test("Should shift, ClinVar-annotate and trio-filter the joint VCF") {
+
+        when {
+            params {
+                reference            = "${projectDir}/data/ref/ref.fasta"
+                reference_index      = "${projectDir}/data/ref/ref.fasta.fai"
+                reference_dict       = "${projectDir}/data/ref/ref.dict"
+                intervals            = "${projectDir}/data/ref/intervals.bed"
+                cohort_name          = "family_trio"
+                input                = "${projectDir}/data/samplesheet.csv"
+                contig_offset        = 10037292
+                source_contig        = '20_10037292_10066351'
+                target_contig        = '20'
+                target_contig_length = 63025520
+                clinvar              = "${projectDir}/data/annotation/clinvar_region.vcf.gz"
+                proband              = 'reads_son'
+                father               = 'reads_father'
+                mother               = 'reads_mother'
+            }
+            workflow {
+                """
+                input[0] = Channel.of(
+                    tuple('reads_mother', file("${projectDir}/data/bam/reads_mother.bam")),
+                    tuple('reads_father', file("${projectDir}/data/bam/reads_father.bam")),
+                    tuple('reads_son',    file("${projectDir}/data/bam/reads_son.bam"))
+                )
+                """
+            }
+        }
+
+        then {
+            assert workflow.success
+            assert file(workflow.out.annotated_vcf[0]).name == 'family_trio.clinvar.vcf.gz'
+            assert workflow.out.ref_check.size() == 0     // no --ref_check_fasta
+            assert workflow.out.snpeff_html.size() == 0   // no --snpeff_db
+
+            // Expected values from the manual analysis (README "Annotation")
+            assert file(workflow.out.annotation_summary[0]).readLines() == [
+                'metric\tcount',
+                'total_variants\t18',
+                'clinvar_annotated\t0',
+                'protein_altering\tNA',
+                'de_novo\t0'
+            ]
         }
     }
 

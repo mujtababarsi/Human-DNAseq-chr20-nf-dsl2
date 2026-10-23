@@ -2,11 +2,17 @@
 
 nextflow.enable.dsl = 2
 
-// --help is handled automatically by nf-schema (see nextflow.config)
-include { DNASEQ_WORKFLOW }                     from './workflows/dnaseq.nf'
-include { validateParameters; paramsSummaryLog } from 'plugin/nf-schema'
+include { DNASEQ_WORKFLOW }                                 from './workflows/dnaseq.nf'
+include { validateParameters; paramsHelp; paramsSummaryLog } from 'plugin/nf-schema'
 
 workflow {
+    // Print help (generated from nextflow_schema.json) and stop before
+    // validation, which would otherwise fail on the missing inputs
+    if (params.help) {
+        log.info paramsHelp()   // usage line comes from validation.help.command
+        exit 0
+    }
+
     // Validate params against nextflow_schema.json
     validateParameters()
     log.info paramsSummaryLog(workflow)
