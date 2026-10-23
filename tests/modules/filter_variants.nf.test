@@ -1,0 +1,89 @@
+nextflow_process {
+
+    name "Test process FILTER_VARIANTS"
+    script "modules/filter_variants.nf"
+    process "FILTER_VARIANTS"
+
+    test("Should find de novo and protein-altering variants by sample name") {
+
+        // Synthetic trio with columns ordered mother, son, father and one
+        // known hit per filter (see tests/fixtures/README.md)
+        when {
+            process {
+                """
+                input[0] = file("${projectDir}/tests/fixtures/annotation/synthetic_trio.vcf")
+                input[1] = 'test'
+                input[2] = 'son'
+                input[3] = 'father'
+                input[4] = 'mother'
+                """
+            }
+        }
+
+        then {
+            assert process.success
+
+            assert file(process.out.summary[0]).readLines() == [
+                'metric\tcount',
+                'total_variants\t5',
+                'clinvar_annotated\t1',
+                'protein_altering\t2',
+                'de_novo\t1'
+            ]
+
+            def positions = { f ->
+                new java.util.zip.GZIPInputStream(new FileInputStream(file(f))).text
+                    .readLines().findAll { !it.startsWith('#') }.collect { it.split('\t')[1] }
+            }
+            assert positions(process.out.de_novo[0]) == ['100']
+            assert positions(process.out.protein_altering[0]) == ['200', '300']
+        }
+    }
+
+    test("Should skip the protein-altering filter when there is no SnpEff ANN field") {
+
+        when {
+            process {
+                """
+                input[0] = file("${projectDir}/tests/fixtures/annotation/joint_excerpt.vcf")
+                input[1] = 'family_trio'
+                input[2] = 'reads_son'
+                input[3] = 'reads_father'
+                input[4] = 'reads_mother'
+                """
+            }
+        }
+
+        then {
+            assert process.success
+            assert process.out.protein_altering.size() == 0
+            assert file(process.out.summary[0]).readLines() == [
+                'metric\tcount',
+                'total_variants\t3',
+                'clinvar_annotated\tNA',
+                'protein_altering\tNA',
+                'de_novo\t0'
+            ]
+        }
+    }
+
+    test("Should fail when a trio sample name is not in the VCF") {
+
+        when {
+            process {
+                """
+                input[0] = file("${projectDir}/tests/fixtures/annotation/synthetic_trio.vcf")
+                input[1] = 'test'
+                input[2] = 'reads_son'
+                input[3] = 'father'
+                input[4] = 'mother'
+                """
+            }
+        }
+
+        then {
+            assert process.failed
+            assert process.errorReport.contains("sample 'reads_son' not found")
+        }
+    }
+}
