@@ -326,9 +326,10 @@ results/
   whole genome yet.
 - It starts from aligned BAM files, so it doesn't do alignment, duplicate marking or base
   quality score recalibration (BQSR).
-- The variant-calling and QC steps have been run end to end with Docker, locally and on
-  GitHub Actions, where the nf-test suite passes. The annotation steps and their tests have
-  so far been run locally only (Docker; Nextflow 25.10.3 and 26.04.6).
+- The variant-calling, QC, coordinate-shift, ClinVar and filter steps have been run end to
+  end with Docker, locally and on GitHub Actions, where the nf-test suite passes. SnpEff and
+  the REF check need large local files, so they have only been run locally (Docker; Nextflow
+  25.10.3 and 26.04.6).
 - The Singularity and Conda profiles haven't been tested, including the new SnpEff conda
   environment (`envs/snpeff.yml`). It hasn't been run on an HPC cluster.
 - The annotation steps have these limits:
