@@ -1,0 +1,12 @@
+##fileformat=VCFv4.2
+##comment=TEST FIXTURE ONLY: synthetic trio VCF, invented genotypes and annotations. Sample columns are deliberately ordered mother, son, father to prove samples are resolved by name. Expected: total 5, clinvar_annotated 1, protein_altering 2 (pos 200 HIGH, 300 MODERATE), de_novo 1 (pos 100). Pos 400 has a missing maternal genotype (not de novo); pos 500 has gene name HIGHMODERATE1 with MODIFIER impact (must not count as protein-altering).
+##contig=<ID=20,length=63025520>
+##INFO=<ID=CLNSIG,Number=.,Type=String,Description="Aggregate germline classification for this single variant; multiple values are separated by a vertical bar">
+##INFO=<ID=ANN,Number=.,Type=String,Description="Functional annotations: 'Allele | Annotation | Annotation_Impact | Gene_Name | Gene_ID | Feature_Type | Feature_ID | Transcript_BioType | Rank | HGVS.c | HGVS.p | cDNA.pos / cDNA.length | CDS.pos / CDS.length | AA.pos / AA.length | Distance | ERRORS / WARNINGS / INFO' ">
+##FORMAT=<ID=GT,Number=1,Type=String,Description="Genotype">
+#CHROM	POS	ID	REF	ALT	QUAL	FILTER	INFO	FORMAT	mother	son	father
+20	100	.	A	G	50	PASS	ANN=G|intron_variant|MODIFIER|GENEA|GA|transcript|TA|protein_coding||||||||	GT	0/0	0/1	0/0
+20	200	.	C	T	50	PASS	CLNSIG=Pathogenic;ANN=T|stop_gained|HIGH|GENEB|GB|transcript|TB|protein_coding||||||||	GT	0/0	0/1	0/1
+20	300	.	G	A	50	PASS	ANN=A|missense_variant|MODERATE|GENEC|GC|transcript|TC|protein_coding||||||||	GT	0/1	1/1	0/1
+20	400	.	T	C	50	PASS	ANN=C|synonymous_variant|LOW|GENED|GD|transcript|TD|protein_coding||||||||	GT	./.	0/1	0/0
+20	500	.	A	C	50	PASS	ANN=C|intron_variant|MODIFIER|HIGHMODERATE1|GE|transcript|TE|protein_coding||||||||	GT	0/1	0/0	0/0
