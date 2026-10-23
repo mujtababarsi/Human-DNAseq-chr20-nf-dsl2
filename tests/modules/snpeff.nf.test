@@ -1,0 +1,33 @@
+nextflow_process {
+
+    name "Test process SNPEFF"
+    script "modules/snpeff.nf"
+    process "SNPEFF"
+
+    // Stub only: the GRCh37.75 database (~540 MB) is not available in CI.
+    // A real SnpEff run is checked by running the pipeline with --snpeff_db
+    // (see README "Annotation").
+    test("Should declare the annotated VCF and summary outputs (stub)") {
+
+        options "-stub"
+
+        when {
+            process {
+                """
+                input[0] = file("${projectDir}/tests/fixtures/annotation/joint_excerpt.vcf")
+                input[1] = file("${projectDir}/tests/fixtures/annotation")
+                input[2] = 'GRCh37.75'
+                input[3] = 'family_trio'
+                """
+            }
+        }
+
+        then {
+            assert process.success
+            assert file(process.out.vcf[0]).name   == 'family_trio.snpeff.vcf'
+            assert file(process.out.html[0]).name  == 'family_trio.snpeff.html'
+            assert file(process.out.csv[0]).name   == 'family_trio.snpeff.csv'
+            assert file(process.out.genes[0]).name == 'family_trio.snpeff.genes.txt'
+        }
+    }
+}

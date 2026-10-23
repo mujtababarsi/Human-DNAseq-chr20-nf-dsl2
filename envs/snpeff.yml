@@ -1,0 +1,6 @@
+name: human-dnaseq-chr20-snpeff
+channels:
+  - bioconda
+  - conda-forge
+dependencies:
+  - snpeff=5.4.0c
