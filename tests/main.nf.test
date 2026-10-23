@@ -45,10 +45,62 @@ nextflow_pipeline {
             assert header_line.contains('reads_mother')
             assert header_line.contains('reads_son')
 
+            // No annotation params set: nothing is published under annotation/
+            assert !path("$outputDir/annotation").exists()
+
             // Note: trace.txt/execution_report.html are not checked here.
             // Their path depends on params.outdir, which nf-test overrides
             // too late for those config blocks to pick up — a testing-tool
             // quirk, not a pipeline bug. They work correctly in normal runs.
+        }
+    }
+
+    test("Should annotate the joint VCF when the annotation params are set (as -profile test)") {
+
+        when {
+            params {
+                input                = "${projectDir}/data/samplesheet.csv"
+                reference            = "${projectDir}/data/ref/ref.fasta"
+                reference_index      = "${projectDir}/data/ref/ref.fasta.fai"
+                reference_dict       = "${projectDir}/data/ref/ref.dict"
+                intervals            = "${projectDir}/data/ref/intervals.bed"
+                cohort_name          = "family_trio"
+                outdir               = "$outputDir"
+                contig_offset        = 10037292
+                source_contig        = '20_10037292_10066351'
+                target_contig        = '20'
+                target_contig_length = 63025520
+                clinvar              = "${projectDir}/data/annotation/clinvar_region.vcf.gz"
+                proband              = 'reads_son'
+                father               = 'reads_father'
+                mother               = 'reads_mother'
+            }
+        }
+
+        then {
+            assert workflow.success
+
+            assert path("$outputDir/annotation/family_trio.shifted.vcf.gz").exists()
+            assert path("$outputDir/annotation/family_trio.shifted.vcf.gz.tbi").exists()
+            assert path("$outputDir/annotation/family_trio.clinvar.vcf.gz").exists()
+            assert path("$outputDir/annotation/family_trio.clinvar.vcf.gz.tbi").exists()
+            assert path("$outputDir/annotation/family_trio.de_novo.vcf.gz").exists()
+            // SnpEff is not run (no --snpeff_db), so no protein-altering file
+            assert !path("$outputDir/annotation/family_trio.snpeff.vcf").exists()
+            assert !path("$outputDir/annotation/family_trio.protein_altering.vcf.gz").exists()
+
+            assert path("$outputDir/annotation/family_trio.annotation_summary.tsv").readLines() == [
+                'metric\tcount',
+                'total_variants\t18',
+                'clinvar_annotated\t0',
+                'protein_altering\tNA',
+                'de_novo\t0'
+            ]
+
+            // Coordinates are on GRCh37 chr20 after the shift
+            def shifted = new java.util.zip.GZIPInputStream(new FileInputStream(path("$outputDir/annotation/family_trio.shifted.vcf.gz").toFile())).text.readLines()
+            assert shifted.contains('##contig=<ID=20,length=63025520>')
+            assert shifted.find { !it.startsWith('#') }.startsWith('20\t10040772\t')
         }
     }
 }
